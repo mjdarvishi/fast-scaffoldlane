@@ -1,0 +1,16 @@
+app:
+  debug: false
+  log_level: INFO
+  enable_file_logging: false
+database:
+  host: localhost
+  port: 5432
+  name: __PROJECT_NAME__
+  user: __PROJECT_NAME__
+  password: __PROJECT_NAME__
+auth:
+  tokens:
+    secret_key: ""
+tracing:
+  enabled: false
+  service_name: __PROJECT_NAME__

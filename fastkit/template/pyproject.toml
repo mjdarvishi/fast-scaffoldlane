@@ -1,0 +1,25 @@
+[project]
+name = "__PROJECT_NAME__"
+version = "0.1.0"
+description = "FastAPI service"
+requires-python = ">=3.11"
+dependencies = [
+  "fastapi", "uvicorn", "pydantic-settings", "pyyaml", "python-dotenv",
+  "sqlalchemy", "asyncpg", "greenlet", "pyjwt[crypto]",
+  "prometheus-client", "opentelemetry-api", "opentelemetry-sdk",
+  "opentelemetry-exporter-otlp-proto-http", "opentelemetry-instrumentation-fastapi",
+  "opentelemetry-instrumentation-httpx",
+]
+
+[project.scripts]
+project = "dev_cli.main:cli"
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["app*", "dev_cli*"]
+
+[tool.setuptools.package-data]
+dev_cli = ["file_generator/templates/**/*.tpl"]

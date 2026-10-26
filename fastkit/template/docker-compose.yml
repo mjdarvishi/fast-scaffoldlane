@@ -1,0 +1,14 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: __PROJECT_NAME__
+      POSTGRES_USER: __PROJECT_NAME__
+      POSTGRES_PASSWORD: ${DATABASE__PASSWORD:-__PROJECT_NAME__}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

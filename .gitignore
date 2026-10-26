@@ -1,0 +1,16 @@
+# Python package builds
+build/
+dist/
+*.egg-info/
+
+# Python caches and local environments
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+
+# Local configuration
+.env
+.env.*
+!.env.example
