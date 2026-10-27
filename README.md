@@ -2,9 +2,7 @@
 
 Scaffoldlane is an installable CLI for starting FastAPI projects with a reusable application backbone. It copies a template containing configuration, dependency injection, PostgreSQL data access, email/password signup and signin, logging, a versioned API, and feature generators. New projects include only the generic `auth` feature under `app/features`. The source application's company, vehicle, Telegram, and other business features are not included.
 
-Scaffoldlane currently creates projects and generates feature code.
-
-Optional integrations can be added to generated projects with `scaffoldlane add`.
+Scaffoldlane creates projects, installs optional integrations, and generates feature code.
 
 ## Requirements
 
@@ -64,7 +62,7 @@ cd inventory_api
 
 The name must start with a lowercase letter and may contain lowercase letters, digits, and underscores. Scaffoldlane will not overwrite an existing folder.
 
-`new` copies the bundled template, replaces the project-name placeholders, and initializes a Git repository. It does not create a Git commit or install the generated project's dependencies.
+`new` copies the bundled template, replaces the project-name placeholders, and initializes a Git repository. It then lists Redis, tracing, Socket.IO, and authorization and asks whether to add any of them. Select a number to install one service at a time, or enter `0` to finish. Press Enter at the initial question to skip optional services. The command does not create a Git commit or install the generated project's dependencies.
 
 ```powershell
 scaffoldlane new inventory_api --destination C:\projects
@@ -90,6 +88,21 @@ Open <http://127.0.0.1:8000/v1/health> for the health endpoint or <http://127.0.
 The default auth routes are `POST /v1/auth/signup` and `POST /v1/auth/signin`. Both accept JSON with `email` and `password`; signin returns a bearer access token. The feature has `data/repositories`, `domain/entities`, `domain/repositories`, `domain/services`, `domain/usecases`, `presentation/routes`, and `presentation/schema` packages. The repository maps database rows directly to domain entities. The bundled PostgreSQL container runs `db/migrations/001_users.sql` when its data volume is first created. Apply that SQL yourself for an existing or remote database. Set a unique `AUTH__TOKENS__SECRET_KEY` of at least 32 bytes in `.env` before issuing tokens. The auth feature does not include password reset or email verification; add those when your project needs them.
 
 The example `.env` contains development credentials and a placeholder token secret. Replace them before using the project outside local development. The health route can run without an active PostgreSQL connection, but database features need the Compose service or another configured PostgreSQL instance.
+
+## Add optional services
+
+From a generated project directory, run `scaffoldlane add` to see a numbered list of services you can still install. Choose one at a time; the menu reappears after each installation. Enter `0` when finished. Already installed services are omitted. You can also name a service directly, for example `scaffoldlane add redis`, or use `scaffoldlane add --project .\inventory_api` from another directory.
+
+After adding a service, run `uv sync` in the generated project to install its Python dependencies. Some services need the configuration steps described below.
+
+| Service | What it adds |
+| --- | --- |
+| `redis` | Redis connection and key-value helpers, settings, startup/shutdown wiring, and a local Compose service. |
+| `tracing` | OpenTelemetry setup, repository spans, trace-aware logging, and optional Redis spans. Tracing is disabled until configured. |
+| `socketio` | An asynchronous Socket.IO server, emit helpers, event registration, and an example handler. |
+| `authorization` | Role and permission checks, a SQL repository, a FastAPI dependency, and a migration to review and apply. |
+
+The services are independent additions. Redis and tracing can be installed in either order.
 
 ## Add Redis
 
@@ -140,7 +153,28 @@ uv sync
 
 This adds OpenTelemetry configuration, tracing bootstrap, repository spans, and trace-aware structured logging. Tracing starts disabled; set `TRACING__ENABLED=true` and `TRACING__OTLP_TRACES_ENDPOINT` in `.env` to export traces. You can also set `TRACING__SERVICE_NAME`. If Redis is installed, its key-value service gains Redis spans. Redis and tracing can be added in either order. New projects have no OpenTelemetry dependency until tracing is added.
 
-## Generate features
+## Use the generated project's development CLI
+
+Each generated project contains its own `dev_cli` package and exposes it as the `project` command. After running `uv sync` inside the generated project, use:
+
+```powershell
+uv run project generate --help
+uv run project generate domain product
+uv run project generate model product item
+uv run project generate listener product product_created
+```
+
+The installed `scaffoldlane` command can run the same generators. It delegates to the generated project's `dev_cli`, so the generator version stays with that project even if Scaffoldlane is updated later.
+
+| Generator | What it creates |
+| --- | --- |
+| `domain NAME` | `app/features/NAME/` with data, domain, and presentation packages; an entity, repository interface and implementation, use case, router, and schema package. |
+| `model DOMAIN NAME` | Another entity under an existing domain's `domain/entities/` package and updates its exports. |
+| `listener DOMAIN NAME` | A listener under an existing domain's `domain/listeners/` package and updates the domain's listener registration. |
+
+These are starting points: repository access and use-case behavior still need implementation, and the generated router has no application endpoints. Supply `--event module.path:EventClass` for a listener to handle a specific event; the default is `app.core.event_bus:BaseEvent`. Omit a name to enter it interactively. Use `--force` only when you intend to overwrite generated files.
+
+## Generate features through Scaffoldlane
 
 From the generated project directory:
 
@@ -156,7 +190,7 @@ From another directory, point the CLI at the project:
 scaffoldlane generate --project .\inventory_api domain product
 ```
 
-`generate domain` creates data, domain, and presentation folders with a domain repository interface and data repository implementation. It does not create DTOs. `generate model` adds a domain entity to an existing domain. `generate listener` adds a listener to an existing domain; use `--event module.path:EventClass` to select its event class. The generators accept `--force` to overwrite generated files. Inspect existing code before using that option.
+`generate domain` does not create DTOs. Create the domain before adding models or listeners to it.
 
 Scaffoldlane delegates generation to the generated project's `dev_cli` package, so each project's generator matches the template version it was created with. Run `scaffoldlane generate --project PATH --help` or `scaffoldlane generate --project PATH domain --help` for command options.
 
@@ -166,18 +200,18 @@ After creating a domain, register its router in `app/api/v1/__init__.py` if it s
 
 ```text
 inventory_api/
-├── .env.example           # Development configuration example
-├── .gitignore             # Local secrets, caches, and build output
-├── docker-compose.yml     # Local PostgreSQL service
-├── pyproject.toml         # Dependencies and local CLI entry point
-├── main.py                # FastAPI app and service bootstrap
-├── app/
-│   ├── api/               # API version and route registration
-│   ├── config/            # Default, dev, and prod YAML settings
-│   ├── core/              # Reusable application backbone
-│   ├── features/          # Empty until you add domains
-│   └── health.py          # /v1/health route
-└── dev_cli/               # Domain, model, and listener generators
+|-- .env.example           # Development configuration example
+|-- .gitignore             # Local secrets, caches, and build output
+|-- docker-compose.yml     # Local PostgreSQL service
+|-- pyproject.toml         # Dependencies and local CLI entry point
+|-- main.py                # FastAPI app and service bootstrap
+|-- app/
+|   |-- api/               # API version and route registration
+|   |-- config/            # Default, dev, and prod YAML settings
+|   |-- core/              # Reusable application backbone
+|   |-- features/          # Includes the auth feature
+|   `-- health.py          # /v1/health route
+`-- dev_cli/               # Domain, model, and listener generators
 ```
 
 The copied `app/core` includes settings, dependency injection, domain and entity bases, SQLAlchemy database and repository helpers, transactions, JWT helpers, exceptions, events, logging, and metrics. `main.py` wires the versioned router and core service bootstrap. It contains no application specific runtime services.
