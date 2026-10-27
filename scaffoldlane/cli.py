@@ -5,6 +5,7 @@ import subprocess
 import sys
 
 import click
+import questionary
 
 from scaffoldlane.addons.redis.install import install as install_redis
 from scaffoldlane.addons.authorization.install import install as install_authorization
@@ -38,13 +39,26 @@ def _show_services(services: list[str]) -> None:
 
 
 def _choose_services(project: Path) -> None:
-    """Offer optional services one at a time until the user is done."""
+    """Select optional services, then install them one at a time."""
     if not (project / "main.py").is_file() or not (project / "app/core/config/root.py").is_file():
         raise click.ClickException(f"No generated Scaffoldlane project found at {project.resolve()}")
     remaining = _available_services(project)
     if not remaining:
         click.echo("All optional services are already installed.")
         return
+    if sys.stdin.isatty():
+        selected = questionary.checkbox(
+            "Select services to add (Space to select, Enter to install):",
+            choices=remaining,
+        ).ask()
+        if selected is None:
+            raise click.Abort()
+        for service in selected:
+            SERVICES[service](project)
+            click.echo(f"Added {service} to {project.resolve()}.")
+        return
+
+    # Piped input and test runners cannot use an arrow-key interface.
     while remaining:
         _show_services(remaining)
         click.echo("  0. Done")
@@ -91,15 +105,17 @@ def new(name: str, destination: Path, git: bool) -> None:
         except (FileNotFoundError, subprocess.CalledProcessError) as exc:
             raise click.ClickException(f"Project created at {target}, but Git initialization failed: {exc}") from exc
     click.echo(f"Created {target}")
-    _show_services(_available_services(target))
     click.echo("Optional services can also be added later with 'scaffoldlane add'.")
-    try:
-        if click.confirm("Would you like to add optional services now?", default=False):
-            _choose_services(target)
-    except (click.Abort, EOFError):
-        # Project creation also works when stdin is unavailable (for example in CI).
-        if sys.stdin.isatty():
-            raise
+    if sys.stdin.isatty():
+        _choose_services(target)
+    else:
+        _show_services(_available_services(target))
+        try:
+            if click.confirm("Would you like to add optional services now?", default=False):
+                _choose_services(target)
+        except (click.Abort, EOFError):
+            # Project creation also works when stdin is unavailable (for example in CI).
+            pass
 
 
 @cli.command(context_settings={"ignore_unknown_options": True})

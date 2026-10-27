@@ -43,7 +43,7 @@ def install(project: Path) -> None:
         ("auth:\n", "redis:\n  host: localhost\n  port: 6379\n  db: 0\n  reconnect_delay_seconds: 5\nauth:\n"),
     ])
     edit(".env.example", [
-        ("APP_ENV=dev\n", "APP_ENV=dev\n# REDIS__PASSWORD=\n"),
+        ("APP_ENV=dev\n", "APP_ENV=dev\n\n# Redis (added by scaffoldlane add redis). Set a password only if your server requires one.\n# REDIS__HOST=localhost\n# REDIS__PORT=6379\n# REDIS__DB=0\n# REDIS__PASSWORD=\n"),
     ])
     edit("pyproject.toml", [
         ('  "fastapi",', '  "redis>=5",\n  "fastapi",'),

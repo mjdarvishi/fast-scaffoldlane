@@ -42,14 +42,21 @@ The PyPI distribution name and CLI command are both `scaffoldlane`. Earlier rele
 
 ## Publish a release
 
-From this repository's `fastkit` directory, update the version in `pyproject.toml`, then build and inspect the distributions before uploading:
+From this repository's `fastkit` directory, build the version in `pyproject.toml` and inspect the files under `dist/releases/<version>/`:
 
 ```powershell
-uv build --no-sources --out-dir dist/scaffoldlane
-uv publish dist/scaffoldlane/scaffoldlane-0.1.0-py3-none-any.whl dist/scaffoldlane/scaffoldlane-0.1.0.tar.gz
+python scripts/release.py
 ```
 
-`uv publish` needs a PyPI token or configured trusted publishing. Each published version is immutable; increment the version for later releases.
+Before publishing, copy `.env.publish.example` to `.env.publish` in this repository's `fastkit` directory and put your PyPI username and API token in `PYPI_USERNAME` and `PYPI_TOKEN`. For a PyPI API token, use `__token__` as the username. `.env.publish` is ignored by Git.
+
+When ready, upload exactly that version's wheel and source archive:
+
+```powershell
+python scripts/release.py --publish
+```
+
+The script reads the package name and version from `pyproject.toml`, builds into a version-specific folder, and passes only those two files to `uv publish`. It reads the credentials from `.env.publish` and passes them through environment variables, so the token is not placed in the command line. Each published version is immutable; increment the version in `pyproject.toml` for later releases.
 
 ## Create a project
 
@@ -62,7 +69,7 @@ cd inventory_api
 
 The name must start with a lowercase letter and may contain lowercase letters, digits, and underscores. Scaffoldlane will not overwrite an existing folder.
 
-`new` copies the bundled template, replaces the project-name placeholders, and initializes a Git repository. It then lists Redis, tracing, Socket.IO, and authorization and asks whether to add any of them. Select a number to install one service at a time, or enter `0` to finish. Press Enter at the initial question to skip optional services. The command does not create a Git commit or install the generated project's dependencies.
+`new` copies the bundled template, replaces the project-name placeholders, and initializes a Git repository. It also creates a root `.env.example` with database and auth settings. An interactive checklist then offers Redis, tracing, Socket.IO, and authorization. Use the arrow keys to move, Space to select services, and Enter to install them. Submit the list with nothing selected to skip them. Selected services add their applicable variables to `.env.example`. The command does not create a Git commit or install the generated project's dependencies.
 
 ```powershell
 scaffoldlane new inventory_api --destination C:\projects
@@ -87,11 +94,11 @@ Open <http://127.0.0.1:8000/v1/health> for the health endpoint or <http://127.0.
 
 The default auth routes are `POST /v1/auth/signup` and `POST /v1/auth/signin`. Both accept JSON with `email` and `password`; signin returns a bearer access token. The feature has `data/repositories`, `domain/entities`, `domain/repositories`, `domain/services`, `domain/usecases`, `presentation/routes`, and `presentation/schema` packages. The repository maps database rows directly to domain entities. The bundled PostgreSQL container runs `db/migrations/001_users.sql` when its data volume is first created. Apply that SQL yourself for an existing or remote database. Set a unique `AUTH__TOKENS__SECRET_KEY` of at least 32 bytes in `.env` before issuing tokens. The auth feature does not include password reset or email verification; add those when your project needs them.
 
-The example `.env` contains development credentials and a placeholder token secret. Replace them before using the project outside local development. The health route can run without an active PostgreSQL connection, but database features need the Compose service or another configured PostgreSQL instance.
+The root `.env.example` contains development database credentials and a placeholder token secret. Copy it to `.env` and replace the secret before using auth. Redis and tracing add commented settings to the example when installed, including when added later. Socket.IO and authorization do not currently add environment settings; configure Socket.IO origins in `app/socketio/instance.py` and apply the authorization migration as described below. The health route can run without an active PostgreSQL connection, but database features need the Compose service or another configured PostgreSQL instance.
 
 ## Add optional services
 
-From a generated project directory, run `scaffoldlane add` to see a numbered list of services you can still install. Choose one at a time; the menu reappears after each installation. Enter `0` when finished. Already installed services are omitted. You can also name a service directly, for example `scaffoldlane add redis`, or use `scaffoldlane add --project .\inventory_api` from another directory.
+From a generated project directory, run `scaffoldlane add` to open the same checklist. Already installed services are omitted. Select multiple services and they will be installed one at a time. You can also name a service directly, for example `scaffoldlane add redis`, or use `scaffoldlane add --project .\inventory_api` from another directory. When input is piped instead of coming from a terminal, the CLI uses a numbered menu.
 
 After adding a service, run `uv sync` in the generated project to install its Python dependencies. Some services need the configuration steps described below.
 

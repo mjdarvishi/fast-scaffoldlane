@@ -42,6 +42,9 @@ def install(project: Path) -> None:
     edit("app/config/default.yml", [
         ("auth:\n", f"tracing:\n  enabled: false\n  service_name: {project_name}\nauth:\n"),
     ])
+    edit(".env.example", [
+        ("APP_ENV=dev\n", "APP_ENV=dev\n\n# OpenTelemetry tracing (added by scaffoldlane add tracing).\n# TRACING__ENABLED=true\n# TRACING__SERVICE_NAME=your-service-name\n# TRACING__OTLP_TRACES_ENDPOINT=http://localhost:4318/v1/traces\n"),
+    ])
     edit("pyproject.toml", [
         ('  "fastapi",', '  "opentelemetry-api", "opentelemetry-sdk",\n  "opentelemetry-exporter-otlp-proto-http",\n  "opentelemetry-instrumentation-fastapi", "opentelemetry-instrumentation-httpx",\n  "fastapi",'),
     ])
