@@ -17,7 +17,7 @@ build-backend = "setuptools.build_meta"
 include = ["fastkit*"]
 
 [tool.setuptools.package-data]
-fastkit = ["template/**/*", "template/.env.example", "template/.gitignore", "addons/redis/files/**/*", "addons/tracing/files/**/*"]
+fastkit = ["template/**/*", "template/.env.example", "template/.gitignore", "addons/redis/files/**/*", "addons/tracing/files/**/*", "addons/socketio/files/**/*", "addons/authorization/files/**/*"]
 
 [tool.setuptools.exclude-package-data]
 fastkit = ["**/__pycache__/*", "**/*.pyc", "**/*.pyo"]

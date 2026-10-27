@@ -10,17 +10,17 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         description=(
             "Generate feature scaffolds.\n"
             "- Default mode: create a full new domain under app/features.\n"
-            "- --add-dto mode: create a dto/entity pair in an existing domain."
+            "- --add-model mode: create an entity in an existing domain."
         ),
         formatter_class=argparse.RawTextHelpFormatter,
         epilog=(
             "Examples:\n"
             "  python generate_domain.py --name alarm\n"
             "  python generate_domain.py --name alarm --force\n"
-            "  python generate_domain.py --add-dto --domain installation --model procedure_rule\n"
-            "  python generate_domain.py --add-dto --domain installation "
+            "  python generate_domain.py --add-model --domain installation --model procedure_rule\n"
+            "  python generate_domain.py --add-model --domain installation "
             "--model procedure_rule --force\n"
-            "  python generate_domain.py --add-dto  # interactive mode\n"
+            "  python generate_domain.py --add-model  # interactive mode\n"
             "  python generate_domain.py --add-listener --domain event "
             "--listener incoming_event --event app.core.event_bus:BaseEvent"
         ),
@@ -33,17 +33,18 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         help="Overwrite files if the domain folder already exists.",
     )
     parser.add_argument(
-        "--add-dto",
+        "--add-model",
+        dest="add_model",
         action="store_true",
-        help="Create a dto/entity pair inside an existing domain and update __init__.py exports.",
+        help="Create an entity inside an existing domain and update __init__.py exports.",
     )
     parser.add_argument(
         "--domain",
-        help="Existing domain name for --add-dto mode (example: installation).",
+        help="Existing domain name for --add-model mode (example: installation).",
     )
     parser.add_argument(
         "--model",
-        help="Model name for --add-dto mode (example: procedure_category).",
+        help="Model name for --add-model mode (example: procedure_category).",
     )
     parser.add_argument(
         "--add-listener",
@@ -65,7 +66,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv or sys.argv[1:])
 
-    if args.add_dto:
+    if args.add_model:
         raw_domain = args.domain
         raw_model = args.model
 
@@ -82,13 +83,12 @@ def main(argv: list[str] | None = None) -> int:
             return 1
 
         try:
-            dto_file, entity_file = create_model(domain_name, model_name, force=args.force)
+            entity_file = create_model(domain_name, model_name, force=args.force)
         except (FileExistsError, FileNotFoundError) as exc:
             print(f"Error: {exc}")
             return 1
 
         print(f"Model scaffold created successfully for domain '{domain_name}'.")
-        print(f"DTO: {dto_file}")
         print(f"Entity: {entity_file}")
         return 0
 

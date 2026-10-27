@@ -9,6 +9,7 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./db/migrations/001_users.sql:/docker-entrypoint-initdb.d/001_users.sql:ro
 
 volumes:
   postgres_data:

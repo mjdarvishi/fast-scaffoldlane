@@ -4,18 +4,16 @@ from string import Formatter
 
 DOMAIN_TEMPLATE_FILES = {
     "__init__.py": "domain_root.py.tpl",
-    "data/dtos/{domain}.py": "data/dtos/domain_dto.py.tpl",
-    "data/repositories/{domain}_repo.py": "data/repositories/domain_repo.py.tpl",
+    "data/repositories/{domain}_repository.py": "data/repositories/domain_repo.py.tpl",
     "domain/entities/{domain}.py": "domain/entities/domain_entity.py.tpl",
+    "domain/repositories/{domain}_repository.py": "domain/repositories/domain_repo.py.tpl",
     "domain/usecases/{domain}.py": "domain/usecases/domain_usecase.py.tpl",
     "presentation/routes/{domain}.py": "presentation/routes/domain_route.py.tpl",
-    "presentation/policy/__init__.py": "presentation/policy/init.py.tpl",
     "presentation/routes/__init__.py": "presentation/routes/init.py.tpl",
     "presentation/schema/__init__.py": "presentation/schema/init.py.tpl",
 }
 
 MODEL_TEMPLATE_FILES = {
-    "data/dtos/{model}.py": "data/dtos/model_dto.py.tpl",
     "domain/entities/{model}.py": "domain/entities/model_entity.py.tpl",
 }
 

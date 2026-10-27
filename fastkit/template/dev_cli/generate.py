@@ -30,19 +30,18 @@ def generate_domain(name: str | None, force: bool) -> None:
 @click.argument("model", required=False)
 @click.option("-f", "--force", is_flag=True, help="Overwrite files if model files exist.")
 def generate_model(domain: str | None, model: str | None, force: bool) -> None:
-    """Create a DTO and Entity using the project file generator."""
+    """Create a domain entity using the project file generator."""
     raw_domain = domain or click.prompt("Enter existing domain name")
     raw_model = model or click.prompt("Enter model name")
 
     try:
         domain_name = file_generator.normalize_domain_name(raw_domain)
         model_name = file_generator.normalize_model_name(raw_model)
-        dto_file, entity_file = file_generator.create_model(domain_name, model_name, force=force)
+        entity_file = file_generator.create_model(domain_name, model_name, force=force)
     except (ValueError, FileExistsError, FileNotFoundError) as exc:
         raise click.ClickException(str(exc)) from exc
 
     click.secho(f"Model scaffold created for domain '{domain_name}'.", fg="green")
-    click.echo(f"DTO: {dto_file}")
     click.echo(f"Entity: {entity_file}")
 
 

@@ -75,10 +75,10 @@ def update_domain_listener_registration(domain: str, listener_classes: list[str]
         f"            {listener_class}," for listener_class in listener_classes
     )
     content = (
-        f"from app.features.{domain}.presentation.routes import main_router\n"
+        f"from app.features.{domain}.presentation.routes import {domain}_router\n"
         "from app.core.base_domain import BaseDomain\n\n\n"
         f"class {domain_class}Domain(BaseDomain):\n"
-        "    router = main_router\n\n"
+        f"    router = {domain}_router\n\n"
         "    def register_listeners(self):\n"
         f"        from app.features.{domain}.domain.listeners import (\n"
         f"{import_lines}\n"
@@ -102,13 +102,13 @@ def create_domain(domain: str, force: bool = False) -> Path:
     folders_to_init = [
         domain_path,
         domain_path / "data",
-        domain_path / "data" / "dtos",
         domain_path / "data" / "repositories",
         domain_path / "domain",
         domain_path / "domain" / "entities",
+        domain_path / "domain" / "repositories",
+        domain_path / "domain" / "services",
         domain_path / "domain" / "usecases",
         domain_path / "presentation",
-        domain_path / "presentation" / "policy",
         domain_path / "presentation" / "routes",
         domain_path / "presentation" / "schema",
     ]
@@ -127,38 +127,34 @@ def create_domain(domain: str, force: bool = False) -> Path:
     for folder in folders_to_init:
         refresh_folder_init(folder)
 
+    # Restore authored package entry points after generated __init__ exports.
     for relative_path, content in templates.items():
-        target_file = domain_path / relative_path
-        target_file.parent.mkdir(parents=True, exist_ok=True)
-        target_file.write_text(content, encoding="utf-8")
+        if Path(relative_path).name == "__init__.py":
+            (domain_path / relative_path).write_text(content, encoding="utf-8")
 
     return domain_path
 
 
-def create_model(domain: str, model: str, force: bool = False) -> tuple[Path, Path]:
+def create_model(domain: str, model: str, force: bool = False) -> Path:
     domain_path = FEATURES_DIR / domain
     if not domain_path.exists() or not domain_path.is_dir():
         raise FileNotFoundError(
             f"Domain '{domain}' does not exist at {domain_path}. Create the domain first."
         )
 
-    data_dtos = domain_path / "data" / "dtos"
     domain_entities = domain_path / "domain" / "entities"
-    data_dtos.mkdir(parents=True, exist_ok=True)
     domain_entities.mkdir(parents=True, exist_ok=True)
 
-    for folder in [data_dtos, domain_entities]:
-        init_file = folder / "__init__.py"
-        if not init_file.exists():
-            init_file.write_text("__all__ = []\n", encoding="utf-8")
+    init_file = domain_entities / "__init__.py"
+    if not init_file.exists():
+        init_file.write_text("__all__ = []\n", encoding="utf-8")
 
     model_class = to_pascal_case(model)
     templates = render_model_templates(domain=domain, model=model, model_class=model_class)
 
-    dto_file = domain_path / f"data/dtos/{model}.py"
     entity_file = domain_path / f"domain/entities/{model}.py"
 
-    if (dto_file.exists() or entity_file.exists()) and not force:
+    if entity_file.exists() and not force:
         raise FileExistsError(
             f"Model files already exist for '{model}' in domain '{domain}'. "
             "Use --force to overwrite."
@@ -169,10 +165,9 @@ def create_model(domain: str, model: str, force: bool = False) -> tuple[Path, Pa
         target_file.parent.mkdir(parents=True, exist_ok=True)
         target_file.write_text(content, encoding="utf-8")
 
-    refresh_folder_init(data_dtos)
     refresh_folder_init(domain_entities)
 
-    return dto_file, entity_file
+    return entity_file
 
 
 def create_listener(

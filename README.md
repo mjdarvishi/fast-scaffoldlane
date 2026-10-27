@@ -1,6 +1,6 @@
 # FastKit
 
-FastKit is an installable CLI for starting FastAPI projects with a reusable application backbone. It copies a template containing configuration, dependency injection, PostgreSQL data access, authentication helpers, logging, a versioned API, and feature generators. New projects have an empty `app/features` package. The source application's company, vehicle, Telegram, and other business features are not included.
+FastKit is an installable CLI for starting FastAPI projects with a reusable application backbone. It copies a template containing configuration, dependency injection, PostgreSQL data access, email/password signup and signin, logging, a versioned API, and feature generators. New projects include only the generic `auth` feature under `app/features`. The source application's company, vehicle, Telegram, and other business features are not included.
 
 FastKit currently creates projects and generates feature code.
 
@@ -87,6 +87,8 @@ uv run uvicorn main:app --reload
 
 Open <http://127.0.0.1:8000/v1/health> for the health endpoint or <http://127.0.0.1:8000/docs> for FastAPI's default API documentation. PostgreSQL is exposed on local port `5432`; change the Compose mapping if that port is already in use.
 
+The default auth routes are `POST /v1/auth/signup` and `POST /v1/auth/signin`. Both accept JSON with `email` and `password`; signin returns a bearer access token. The feature has `data/repositories`, `domain/entities`, `domain/repositories`, `domain/services`, `domain/usecases`, `presentation/routes`, and `presentation/schema` packages. The repository maps database rows directly to domain entities. The bundled PostgreSQL container runs `db/migrations/001_users.sql` when its data volume is first created. Apply that SQL yourself for an existing or remote database. Set a unique `AUTH__TOKENS__SECRET_KEY` of at least 32 bytes in `.env` before issuing tokens. The auth feature does not include password reset or email verification; add those when your project needs them.
+
 The example `.env` contains development credentials and a placeholder token secret. Replace them before using the project outside local development. The health route can run without an active PostgreSQL connection, but database features need the Compose service or another configured PostgreSQL instance.
 
 ## Add Redis
@@ -104,6 +106,28 @@ Or use `fastkit add redis --project .\inventory_api` from another directory. The
 `MainRedisConnection` connects in a background retry loop, so application startup does not wait for Redis. Check `is_connected` if a feature needs to report readiness. Inject `RedisKVService` for common key-value operations, or `MainRedisConnection` for direct Redis commands. The service manager owns connection shutdown.
 
 Future optional integrations belong under `fastkit/addons/<name>/`, with their own installer and copied files. The `fastkit add` command group keeps these separate from feature/domain generation.
+
+## Add Socket.IO
+
+From a generated project directory, run:
+
+```powershell
+fastkit add socketio
+uv sync
+uv run python main.py
+```
+
+This adds `app/socketio/instance.py` with a shared asynchronous Socket.IO server, generic emit helpers in `app/socketio/emitter.py`, and the `python-socketio` dependency. The installer wraps the FastAPI application as `sio_app = ASGIApp(sio, other_asgi_app=app)` and runs `main:sio_app` on port `5010` when `main.py` is launched directly. You can also run `uv run uvicorn main:sio_app --host 0.0.0.0 --port 5010 --reload`.
+
+The `app/socketio/events/` package contains an inactive example handler. Add your handlers there and call their registration functions from `app/socketio/register.py`; `main.py` calls `register_all_events(sio)` during setup. To try the example, uncomment its two lines in `register.py`. No project-specific connection tracking is installed. The default server keeps client state in the current process; configure a Socket.IO client manager yourself if you need multiple workers or instances. Set `cors_allowed_origins` in `instance.py` to your permitted frontend origins before deployment.
+
+## Add authorization
+
+From a generated project directory, run `fastkit add authorization`. The command copies a generic role-based access manager, a PostgreSQL repository, a FastAPI dependency, and `db/migrations/authorization.sql`. It does not run the SQL. Review and apply the migration after `001_users.sql`; `user_roles.user_id` references the default `users` table. The schema assumes UUID user IDs, matching `get_current_user_id` in the base template.
+
+Create your project's permissions, roles, grants, and user assignments after applying the migration. No business-specific resources or role seeds are included. Protect a route with `dependencies=[Depends(require_permission("invoice", "read"))]`, importing `Depends` from FastAPI and `require_permission` from `app.core.authorization.dependency`. For checks in use cases, call `await injector.get(AccessManager).require(user_id=user_id, resource="invoice", action="read")`.
+
+The singleton access manager caches active role grants, while it fetches the user's current role IDs for each decision. Call `await injector.get(AccessManager).invalidate_grants()` after changing a role, permission, or grant. User role assignments take effect on the next check without invalidation. The cache is per process: projects running multiple workers must also invalidate or refresh the other workers after grant changes. A project with different identity storage can implement `AccessRepository` instead of using the included SQL repository.
 
 ## Add tracing
 
@@ -132,7 +156,7 @@ From another directory, point the CLI at the project:
 fastkit generate --project .\inventory_api domain product
 ```
 
-`generate domain` creates data, domain, and presentation folders with starter code. `generate model` adds an entity and database DTO to an existing domain. `generate listener` adds a listener to an existing domain; use `--event module.path:EventClass` to select its event class. The generators accept `--force` to overwrite generated files. Inspect existing code before using that option.
+`generate domain` creates data, domain, and presentation folders with a domain repository interface and data repository implementation. It does not create DTOs. `generate model` adds a domain entity to an existing domain. `generate listener` adds a listener to an existing domain; use `--event module.path:EventClass` to select its event class. The generators accept `--force` to overwrite generated files. Inspect existing code before using that option.
 
 FastKit delegates generation to the generated project's `dev_cli` package, so each project's generator matches the template version it was created with. Run `fastkit generate --project PATH --help` or `fastkit generate --project PATH domain --help` for command options.
 

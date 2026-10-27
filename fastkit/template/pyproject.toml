@@ -5,7 +5,7 @@ description = "FastAPI service"
 requires-python = ">=3.11"
 dependencies = [
   "fastapi", "uvicorn", "pydantic-settings", "pyyaml", "python-dotenv",
-  "sqlalchemy", "asyncpg", "greenlet", "pyjwt[crypto]",
+  "sqlalchemy", "asyncpg", "greenlet", "pyjwt[crypto]", "email-validator",
   "prometheus-client",
 ]
 

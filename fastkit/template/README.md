@@ -1,6 +1,6 @@
 # __PROJECT_NAME__
 
-Generated FastAPI project with a reusable core and an empty `app/features` package.
+Generated FastAPI project with a reusable core and a default auth feature in `app/features`.
 
 ```bash
 uv sync
