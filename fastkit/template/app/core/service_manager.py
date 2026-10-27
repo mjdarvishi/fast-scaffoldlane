@@ -6,7 +6,6 @@ from fastapi import FastAPI
 from app.core.config import Settings
 from app.core.dependency import injector
 from app.core.logging.logging_config import LogConfig
-from app.core.tracing import setup_tracing
 
 
 @dataclass(frozen=True)
@@ -37,8 +36,6 @@ class ServiceManager:
             log_level=settings.app.log_level,
             enable_file_logging=settings.app.enable_file_logging,
         )
-
-        setup_tracing(settings=settings, logger=logger, app=app)
 
         self.context = ServiceContext(
             settings=settings,

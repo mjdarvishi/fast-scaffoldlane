@@ -6,6 +6,9 @@ import sys
 
 import click
 
+from fastkit.addons.redis.install import install as install_redis
+from fastkit.addons.tracing.install import install as install_tracing
+
 
 TEMPLATE = Path(__file__).resolve().parent / "template"
 
@@ -70,6 +73,29 @@ def generate(project: Path, args: tuple[str, ...]) -> None:
     )
     if result.returncode:
         raise SystemExit(result.returncode)
+
+
+@cli.group()
+def add() -> None:
+    """Install optional integrations in a generated project."""
+
+
+@add.command("redis")
+@click.option("--project", type=click.Path(path_type=Path, file_okay=False),
+              default=Path.cwd(), help="Generated project directory.")
+def add_redis(project: Path) -> None:
+    """Add Redis connection, key-value service, configuration and Compose service."""
+    install_redis(project)
+    click.echo(f"Added Redis to {project.resolve()}. Run uv sync in that project.")
+
+
+@add.command("tracing")
+@click.option("--project", type=click.Path(path_type=Path, file_okay=False),
+              default=Path.cwd(), help="Generated project directory.")
+def add_tracing(project: Path) -> None:
+    """Add OpenTelemetry tracing to a generated project."""
+    install_tracing(project)
+    click.echo(f"Added tracing to {project.resolve()}. Run uv sync in that project.")
 
 
 if __name__ == "__main__":

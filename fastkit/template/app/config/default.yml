@@ -11,6 +11,3 @@ database:
 auth:
   tokens:
     secret_key: ""
-tracing:
-  enabled: false
-  service_name: __PROJECT_NAME__

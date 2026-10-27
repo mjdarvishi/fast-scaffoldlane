@@ -14,7 +14,6 @@ from .app import AppSettings
 from .auth import AuthSettings
 from .database import DatabaseSettings
 from .loader import get_app_env, load_yaml_config
-from .tracing import TracingSettings
 
 
 @injectable(singleton=True)
@@ -27,7 +26,6 @@ class Settings(BaseSettings):
     app: AppSettings = Field(default_factory=AppSettings)
     auth: AuthSettings = Field(default_factory=AuthSettings)
     database: DatabaseSettings
-    tracing: TracingSettings = Field(default_factory=TracingSettings)
 
     @property
     def is_dev(self) -> bool:

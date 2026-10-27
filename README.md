@@ -1,8 +1,10 @@
 # FastKit
 
-FastKit is an installable CLI for starting FastAPI projects with a reusable application backbone. It copies a template containing configuration, dependency injection, PostgreSQL data access, authentication helpers, logging, tracing hooks, a versioned API, and feature generators. New projects have an empty `app/features` package. The source application's company, vehicle, Telegram, and other business features are not included.
+FastKit is an installable CLI for starting FastAPI projects with a reusable application backbone. It copies a template containing configuration, dependency injection, PostgreSQL data access, authentication helpers, logging, a versioned API, and feature generators. New projects have an empty `app/features` package. The source application's company, vehicle, Telegram, and other business features are not included.
 
 FastKit currently creates projects and generates feature code.
+
+Optional integrations can be added to generated projects with `fastkit add`.
 
 ## Requirements
 
@@ -13,7 +15,16 @@ FastKit currently creates projects and generates feature code.
 
 ## Install the CLI
 
-From this repository's `fastkit` directory:
+After publishing to PyPI:
+
+```powershell
+uv tool install fastkit-project-generator
+fastkit --help
+```
+
+Alternatively, install in a Python environment with `python -m pip install fastkit-project-generator`. The `fastkit` executable is then available in that environment's scripts directory.
+
+For local development, from this repository's `fastkit` directory:
 
 ```powershell
 uv tool install .
@@ -29,7 +40,18 @@ fastkit --help
 
 Run `uv tool update-shell` and open a new terminal to make the tool directory available in future sessions.
 
-**Publishing note:** `fastkit` is already used by an unrelated [PyPI package](https://pypi.org/project/fastkit/). These instructions install this repository's local package. A distinct distribution name will be needed before publishing this project to PyPI.
+The PyPI distribution name is `fastkit-project-generator`; the CLI command remains `fastkit`. The `fastkit` and `fastkit-cli` distribution names belong to other projects.
+
+## Publish a release
+
+From this repository's `fastkit` directory, update the version in `pyproject.toml`, then build and inspect the distributions before uploading:
+
+```powershell
+uv build --no-sources
+uv publish
+```
+
+`uv publish` needs a PyPI token or configured trusted publishing. Each published version is immutable; increment the version for later releases.
 
 ## Create a project
 
@@ -66,6 +88,33 @@ uv run uvicorn main:app --reload
 Open <http://127.0.0.1:8000/v1/health> for the health endpoint or <http://127.0.0.1:8000/docs> for FastAPI's default API documentation. PostgreSQL is exposed on local port `5432`; change the Compose mapping if that port is already in use.
 
 The example `.env` contains development credentials and a placeholder token secret. Replace them before using the project outside local development. The health route can run without an active PostgreSQL connection, but database features need the Compose service or another configured PostgreSQL instance.
+
+## Add Redis
+
+From a generated project directory, run:
+
+```powershell
+fastkit add redis
+uv sync
+docker compose up -d redis
+```
+
+Or use `fastkit add redis --project .\inventory_api` from another directory. The command adds `app/core/redis/connection.py` and `kv_service.py`, Redis settings, a Compose service, the `redis` Python dependency, and startup/shutdown wiring. It refuses to overwrite an existing Redis integration. Configure a remote Redis instance with `REDIS__HOST`, `REDIS__PORT`, `REDIS__DB`, and `REDIS__PASSWORD` in `.env`; the bundled Compose service is intended for local development without a password.
+
+`MainRedisConnection` connects in a background retry loop, so application startup does not wait for Redis. Check `is_connected` if a feature needs to report readiness. Inject `RedisKVService` for common key-value operations, or `MainRedisConnection` for direct Redis commands. The service manager owns connection shutdown.
+
+Future optional integrations belong under `fastkit/addons/<name>/`, with their own installer and copied files. The `fastkit add` command group keeps these separate from feature/domain generation.
+
+## Add tracing
+
+From a generated project directory, run:
+
+```powershell
+fastkit add tracing
+uv sync
+```
+
+This adds OpenTelemetry configuration, tracing bootstrap, repository spans, and trace-aware structured logging. Tracing starts disabled; set `TRACING__ENABLED=true` and `TRACING__OTLP_TRACES_ENDPOINT` in `.env` to export traces. You can also set `TRACING__SERVICE_NAME`. If Redis is installed, its key-value service gains Redis spans. Redis and tracing can be added in either order. New projects have no OpenTelemetry dependency until tracing is added.
 
 ## Generate features
 
@@ -107,13 +156,13 @@ inventory_api/
 └── dev_cli/               # Domain, model, and listener generators
 ```
 
-The copied `app/core` includes settings, dependency injection, domain and entity bases, SQLAlchemy database and repository helpers, transactions, JWT helpers, exceptions, events, logging, metrics, and optional tracing support. `main.py` wires the versioned router and core service bootstrap. It contains no application specific runtime services.
+The copied `app/core` includes settings, dependency injection, domain and entity bases, SQLAlchemy database and repository helpers, transactions, JWT helpers, exceptions, events, logging, and metrics. `main.py` wires the versioned router and core service bootstrap. It contains no application specific runtime services.
 
 ## Configuration
 
 Settings are read from `app/config/default.yml`, then the file for `APP_ENV` (such as `dev.yml` or `prod.yml`). Environment variables and `.env` values can override them. Nested environment keys use double underscores, for example `DATABASE__PASSWORD` and `AUTH__TOKENS__SECRET_KEY`.
 
-The template defaults to `APP_ENV=dev`, a PostgreSQL database named after the project, and disabled tracing. `.env` is ignored by Git; `.env.example` is tracked. Keep production secrets out of YAML files and Git.
+The template defaults to `APP_ENV=dev` and a PostgreSQL database named after the project. `.env` is ignored by Git; `.env.example` is tracked. Keep production secrets out of YAML files and Git.
 
 ## Working on FastKit itself
 

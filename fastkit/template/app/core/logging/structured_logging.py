@@ -4,30 +4,11 @@ import uuid
 from datetime import UTC, datetime
 
 from fastapi.encoders import jsonable_encoder
-from opentelemetry import trace
 
 from app.core.context_var import span_id_var, trace_id_var
 
 
-def _trace_and_span_from_otel() -> tuple[str, str]:
-    span = trace.get_current_span()
-    if not span:
-        return "", ""
-
-    span_context = span.get_span_context()
-    if not span_context or not span_context.is_valid:
-        return "", ""
-
-    trace_id = format(span_context.trace_id, "032x")
-    span_id = format(span_context.span_id, "016x")
-    return trace_id, span_id
-
-
 def get_current_trace_and_span_ids() -> tuple[str, str]:
-    otel_trace_id, otel_span_id = _trace_and_span_from_otel()
-    if otel_trace_id:
-        return otel_trace_id, otel_span_id
-
     trace_id = trace_id_var.get("")
     span_id = span_id_var.get("")
     return trace_id, span_id
