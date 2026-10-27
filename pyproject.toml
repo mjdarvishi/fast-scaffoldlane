@@ -1,5 +1,5 @@
 [project]
-name = "fastkit-project-generator"
+name = "scaffoldlane"
 version = "0.1.0"
 description = "Generate FastAPI projects with a reusable application core"
 readme = "README.md"
@@ -7,17 +7,17 @@ requires-python = ">=3.11"
 dependencies = ["click>=8.1"]
 
 [project.scripts]
-fastkit = "fastkit.cli:cli"
+scaffoldlane = "scaffoldlane.cli:cli"
 
 [build-system]
 requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
-include = ["fastkit*"]
+include = ["scaffoldlane*"]
 
 [tool.setuptools.package-data]
-fastkit = ["template/**/*", "template/.env.example", "template/.gitignore", "addons/redis/files/**/*", "addons/tracing/files/**/*", "addons/socketio/files/**/*", "addons/authorization/files/**/*"]
+scaffoldlane = ["template/**/*", "template/.env.example", "template/.gitignore", "addons/redis/files/**/*", "addons/tracing/files/**/*", "addons/socketio/files/**/*", "addons/authorization/files/**/*"]
 
 [tool.setuptools.exclude-package-data]
-fastkit = ["**/__pycache__/*", "**/*.pyc", "**/*.pyo"]
+scaffoldlane = ["**/__pycache__/*", "**/*.pyc", "**/*.pyo"]

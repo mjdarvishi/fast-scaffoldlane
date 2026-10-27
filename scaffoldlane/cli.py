@@ -6,10 +6,10 @@ import sys
 
 import click
 
-from fastkit.addons.redis.install import install as install_redis
-from fastkit.addons.authorization.install import install as install_authorization
-from fastkit.addons.socketio.install import install as install_socketio
-from fastkit.addons.tracing.install import install as install_tracing
+from scaffoldlane.addons.redis.install import install as install_redis
+from scaffoldlane.addons.authorization.install import install as install_authorization
+from scaffoldlane.addons.socketio.install import install as install_socketio
+from scaffoldlane.addons.tracing.install import install as install_tracing
 
 
 TEMPLATE = Path(__file__).resolve().parent / "template"
@@ -19,15 +19,34 @@ SERVICES = {
     "socketio": install_socketio,
     "authorization": install_authorization,
 }
+SERVICE_MARKERS = {
+    "redis": "app/core/config/redis.py",
+    "tracing": "app/core/config/tracing.py",
+    "socketio": "app/socketio",
+    "authorization": "app/core/authorization",
+}
+
+
+def _available_services(project: Path) -> list[str]:
+    return [name for name in SERVICES if not (project / SERVICE_MARKERS[name]).exists()]
+
+
+def _show_services(services: list[str]) -> None:
+    click.echo("\nAvailable services:")
+    for number, service in enumerate(services, 1):
+        click.echo(f"  {number}. {service}")
 
 
 def _choose_services(project: Path) -> None:
     """Offer optional services one at a time until the user is done."""
-    remaining = list(SERVICES)
+    if not (project / "main.py").is_file() or not (project / "app/core/config/root.py").is_file():
+        raise click.ClickException(f"No generated Scaffoldlane project found at {project.resolve()}")
+    remaining = _available_services(project)
+    if not remaining:
+        click.echo("All optional services are already installed.")
+        return
     while remaining:
-        click.echo("\nAvailable services:")
-        for number, service in enumerate(remaining, 1):
-            click.echo(f"  {number}. {service}")
+        _show_services(remaining)
         click.echo("  0. Done")
         choice = click.prompt("Select a service", type=click.IntRange(0, len(remaining)))
         if choice == 0:
@@ -39,7 +58,7 @@ def _choose_services(project: Path) -> None:
 
 @click.group()
 def cli() -> None:
-    """Create FastKit projects from the reusable backbone."""
+    """Create Scaffoldlane projects from the reusable backbone."""
 
 
 @cli.command()
@@ -72,7 +91,8 @@ def new(name: str, destination: Path, git: bool) -> None:
         except (FileNotFoundError, subprocess.CalledProcessError) as exc:
             raise click.ClickException(f"Project created at {target}, but Git initialization failed: {exc}") from exc
     click.echo(f"Created {target}")
-    click.echo("Optional services can also be added later with 'fastkit add'.")
+    _show_services(_available_services(target))
+    click.echo("Optional services can also be added later with 'scaffoldlane add'.")
     try:
         if click.confirm("Would you like to add optional services now?", default=False):
             _choose_services(target)

@@ -1,1 +1,0 @@
-"""FastKit project generator."""

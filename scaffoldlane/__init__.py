@@ -1,0 +1,1 @@
+"""Scaffoldlane project generator."""

@@ -5,7 +5,7 @@ import shutil
 
 import click
 
-from fastkit.addons.redis.install import _replace
+from scaffoldlane.addons.redis.install import _replace
 
 
 FILES = Path(__file__).parent / "files"
@@ -17,7 +17,7 @@ def install(project: Path) -> None:
     pyproject = project / "pyproject.toml"
     socketio_dir = project / "app/socketio"
     if not main.is_file() or not pyproject.is_file() or not (project / "app/core/service_manager.py").is_file():
-        raise click.ClickException(f"No generated FastKit project found at {project}")
+        raise click.ClickException(f"No generated Scaffoldlane project found at {project}")
     if socketio_dir.exists() or "sio_app" in main.read_text(encoding="utf-8"):
         raise click.ClickException("Socket.IO is already installed; no files were changed.")
 

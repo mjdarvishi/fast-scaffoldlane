@@ -18,7 +18,7 @@ def _replace(content: str, old: str, new: str, path: Path) -> str:
 def install(project: Path) -> None:
     project = project.resolve()
     if not (project / "app/core/config/root.py").is_file() or not (project / "main.py").is_file():
-        raise click.ClickException(f"No generated FastKit project found at {project}")
+        raise click.ClickException(f"No generated Scaffoldlane project found at {project}")
     if (project / "app/core/redis").exists() or (project / "app/core/config/redis.py").exists():
         raise click.ClickException("Redis is already installed; no files were changed.")
 

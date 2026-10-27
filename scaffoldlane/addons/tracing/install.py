@@ -6,7 +6,7 @@ import tomllib
 
 import click
 
-from fastkit.addons.redis.install import _replace
+from scaffoldlane.addons.redis.install import _replace
 
 
 FILES = Path(__file__).parent / "files"
@@ -17,7 +17,7 @@ REDIS_FILES = Path(__file__).resolve().parents[1] / "redis/files"
 def install(project: Path) -> None:
     project = project.resolve()
     if not (project / "app/core/config/root.py").is_file() or not (project / "main.py").is_file():
-        raise click.ClickException(f"No generated FastKit project found at {project}")
+        raise click.ClickException(f"No generated Scaffoldlane project found at {project}")
     if (project / "app/core/tracing.py").exists() or (project / "app/core/config/tracing.py").exists():
         raise click.ClickException("Tracing is already installed; no files were changed.")
 

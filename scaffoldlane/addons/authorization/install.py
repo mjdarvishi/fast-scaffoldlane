@@ -12,7 +12,7 @@ FILES = Path(__file__).parent / "files"
 def install(project: Path) -> None:
     project = project.resolve()
     if not (project / "main.py").is_file() or not (project / "app/core/dependency.py").is_file():
-        raise click.ClickException(f"No generated FastKit project found at {project}")
+        raise click.ClickException(f"No generated Scaffoldlane project found at {project}")
     if (project / "app/core/authorization").exists():
         raise click.ClickException("Authorization is already installed; no files were changed.")
     sources = [source for source in FILES.rglob("*") if source.is_file()]
