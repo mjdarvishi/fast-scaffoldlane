@@ -9,6 +9,9 @@ dependencies = [
   "prometheus-client",
 ]
 
+[dependency-groups]
+dev = ["pytest", "ruff"]
+
 [project.scripts]
 project = "dev_cli.main:cli"
 

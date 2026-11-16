@@ -1,0 +1,26 @@
+services:
+  app-green:
+    build:
+      context: ..
+      dockerfile: deployment/Dockerfile
+    environment:
+      APP_ENV: prod
+      DATABASE__HOST: postgres
+    expose:
+      - "8000"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/v1/health', timeout=2)"
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks:
+      - deployment
+
+networks:
+  deployment:
+    external: true
+    name: __DEPLOYMENT_NETWORK__

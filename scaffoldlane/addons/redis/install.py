@@ -48,7 +48,7 @@ def install(project: Path) -> None:
     edit("pyproject.toml", [
         ('  "fastapi",', '  "redis>=5",\n  "fastapi",'),
     ])
-    edit("docker-compose.yml", [
+    edit("deployment/docker-compose.yml", [
         ("  postgres:\n", "  redis:\n    image: redis:7-alpine\n    ports:\n      - \"6379:6379\"\n  postgres:\n"),
     ])
     edit("app/core/service_manager.py", [

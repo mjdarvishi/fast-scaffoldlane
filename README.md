@@ -69,7 +69,7 @@ cd inventory_api
 
 The name must start with a lowercase letter and may contain lowercase letters, digits, and underscores. Scaffoldlane will not overwrite an existing folder.
 
-`new` copies the bundled template, replaces the project-name placeholders, and initializes a Git repository. It also creates a root `.env.example` with database and auth settings. An interactive checklist then offers Redis, tracing, Socket.IO, and authorization. Use the arrow keys to move, Space to select services, and Enter to install them. Submit the list with nothing selected to skip them. Selected services add their applicable variables to `.env.example`. The command does not create a Git commit or install the generated project's dependencies.
+`new` copies the bundled template, replaces the project-name placeholders, and initializes a Git repository. It also creates a root `.env.example` with database and auth settings. An interactive checklist then offers Redis, tracing, Socket.IO, authorization, and blue-green deployment. Use the arrow keys to move, Space to select services, and Enter to install them. Submit the list with nothing selected to skip them. Selected services add their applicable variables to `.env.example`. The command does not create a Git commit or install the generated project's dependencies.
 
 ```powershell
 scaffoldlane new inventory_api --destination C:\projects
@@ -85,7 +85,7 @@ In the generated project:
 
 ```powershell
 Copy-Item .env.example .env
-docker compose up -d
+docker compose -f deployment/docker-compose.yml up -d
 uv sync
 uv run uvicorn main:app --reload
 ```
@@ -108,6 +108,7 @@ After adding a service, run `uv sync` in the generated project to install its Py
 | `tracing` | OpenTelemetry setup, repository spans, trace-aware logging, and optional Redis spans. Tracing is disabled until configured. |
 | `socketio` | An asynchronous Socket.IO server, emit helpers, event registration, and an example handler. |
 | `authorization` | Role and permission checks, a SQL repository, a FastAPI dependency, and a migration to review and apply. |
+| `blue-green` | Caddy reverse proxy, blue/green Compose definitions, a production Dockerfile, and project CLI deployment commands. |
 
 The services are independent additions. Redis and tracing can be installed in either order.
 
@@ -118,12 +119,26 @@ From a generated project directory, run:
 ```powershell
 scaffoldlane add redis
 uv sync
-docker compose up -d redis
+docker compose -f deployment/docker-compose.yml up -d redis
 ```
 
 Or use `scaffoldlane add redis --project .\inventory_api` from another directory. The command adds `app/core/redis/connection.py` and `kv_service.py`, Redis settings, a Compose service, the `redis` Python dependency, and startup/shutdown wiring. It refuses to overwrite an existing Redis integration. Configure a remote Redis instance with `REDIS__HOST`, `REDIS__PORT`, `REDIS__DB`, and `REDIS__PASSWORD` in `.env`; the bundled Compose service is intended for local development without a password.
 
 `MainRedisConnection` connects in a background retry loop, so application startup does not wait for Redis. Check `is_connected` if a feature needs to report readiness. Inject `RedisKVService` for common key-value operations, or `MainRedisConnection` for direct Redis commands. The service manager owns connection shutdown.
+
+## Add blue-green deployment
+
+From a generated project directory, run:
+
+```powershell
+scaffoldlane add blue-green
+uv sync
+uv run project deployment-status
+uv run project deploy blue-green
+uv run project rollback blue-green
+```
+
+The addon keeps the normal Compose file under `deployment/docker-compose.yml` and adds Caddy plus blue/green application definitions. It builds the application image, waits for the new container health check, reloads Caddy, and removes the old container. Docker and Docker Compose must be installed and available in `PATH`.
 
 Future optional integrations belong under `scaffoldlane/addons/<name>/`, with their own installer and copied files. The `scaffoldlane add` command group keeps these separate from feature/domain generation.
 
@@ -209,7 +224,8 @@ After creating a domain, register its router in `app/api/v1/__init__.py` if it s
 inventory_api/
 |-- .env.example           # Development configuration example
 |-- .gitignore             # Local secrets, caches, and build output
-|-- docker-compose.yml     # Local PostgreSQL service
+|-- deployment/
+|   `-- docker-compose.yml # Local PostgreSQL service
 |-- pyproject.toml         # Dependencies and local CLI entry point
 |-- main.py                # FastAPI app and service bootstrap
 |-- app/

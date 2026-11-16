@@ -1,4 +1,16 @@
 services:
+  app:
+    build:
+      context: ..
+      dockerfile: deployment/Dockerfile
+    environment:
+      APP_ENV: prod
+      DATABASE__HOST: postgres
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+
   postgres:
     image: postgres:16-alpine
     environment:
@@ -9,7 +21,7 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./db/migrations/001_users.sql:/docker-entrypoint-initdb.d/001_users.sql:ro
+      - ../db/migrations/001_users.sql:/docker-entrypoint-initdb.d/001_users.sql:ro
 
 volumes:
   postgres_data:

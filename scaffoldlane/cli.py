@@ -9,6 +9,7 @@ import questionary
 
 from scaffoldlane.addons.redis.install import install as install_redis
 from scaffoldlane.addons.authorization.install import install as install_authorization
+from scaffoldlane.addons.blue_green.install import install as install_blue_green
 from scaffoldlane.addons.socketio.install import install as install_socketio
 from scaffoldlane.addons.tracing.install import install as install_tracing
 
@@ -19,12 +20,14 @@ SERVICES = {
     "tracing": install_tracing,
     "socketio": install_socketio,
     "authorization": install_authorization,
+    "blue-green": install_blue_green,
 }
 SERVICE_MARKERS = {
     "redis": "app/core/config/redis.py",
     "tracing": "app/core/config/tracing.py",
     "socketio": "app/socketio",
     "authorization": "app/core/authorization",
+    "blue-green": "deployment/docker-compose.blue.yml",
 }
 
 
@@ -187,6 +190,15 @@ def add_authorization(project: Path) -> None:
     """Add generic role-based authorization and a reviewable SQL migration."""
     install_authorization(project)
     click.echo(f"Added authorization to {project.resolve()}. Review and apply db/migrations/authorization.sql.")
+
+
+@add.command("blue-green")
+@click.option("--project", type=click.Path(path_type=Path, file_okay=False),
+              default=Path.cwd(), help="Generated project directory.")
+def add_blue_green(project: Path) -> None:
+    """Add Caddy and blue-green deployment commands to a generated project."""
+    install_blue_green(project)
+    click.echo(f"Added blue-green deployment to {project.resolve()}. Run uv sync in that project.")
 
 
 if __name__ == "__main__":

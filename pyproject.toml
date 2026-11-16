@@ -17,7 +17,7 @@ build-backend = "setuptools.build_meta"
 include = ["scaffoldlane*"]
 
 [tool.setuptools.package-data]
-scaffoldlane = ["template/**/*", "template/.env.example", "template/.gitignore", "addons/redis/files/**/*", "addons/tracing/files/**/*", "addons/socketio/files/**/*", "addons/authorization/files/**/*"]
+scaffoldlane = ["template/**/*", "template/.env.example", "template/.gitignore", "addons/redis/files/**/*", "addons/tracing/files/**/*", "addons/socketio/files/**/*", "addons/authorization/files/**/*", "addons/blue_green/files/**/*"]
 
 [tool.setuptools.exclude-package-data]
 scaffoldlane = ["**/__pycache__/*", "**/*.pyc", "**/*.pyo"]
